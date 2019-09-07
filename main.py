@@ -7,10 +7,10 @@ from PyQt5.QtWidgets import (QMainWindow,QWidget,QHBoxLayout,QVBoxLayout,
 QListView,QLabel,QPushButton,QGraphicsView,
 QSpinBox)
 from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QGraphicsScene,QGraphicsEllipseItem,QGraphicsLineItem,QListWidget ,QSizePolicy , QGraphicsRectItem
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QColor,QBrush,QPen,QTransform
+from PyQt5.QtWidgets import QApplication,QLayout
+from PyQt5.QtWidgets import QGraphicsScene,QGraphicsEllipseItem,QGraphicsLineItem,QListWidget ,QSizePolicy , QGraphicsRectItem,QListWidgetItem
+from PyQt5.QtCore import QTimer,Qt
+from PyQt5.QtGui import QColor,QBrush,QPen,QTransform ,QPixmap,QCursor,QIcon
 
 class Cell(QGraphicsRectItem):
 	def __init__(self,row,col):
@@ -23,11 +23,25 @@ class Cell(QGraphicsRectItem):
 		
 		self.setX(self.row*20)
 		self.setY(self.col*20)
+		self.setAcceptHoverEvents(True)
+		self.color=QColor(0,128,0);
+	def mousePressEvent(self,event):
+		if event.button() ==Qt.LeftButton:
+			self.color=self.scene().activeColor;
+			self.setBrush(self.color)
+		
+	def hoverEnterEvent(self ,event):
+		self.setBrush(self.scene().activeColor)
+		
+	def hoverLeaveEvent(self,event):
+		self.setBrush(self.color)
 		
 class Scene(QGraphicsScene):
+	defaultColor=QColor(128,0,0);
 	def __init__(self):
 		QGraphicsScene.__init__(self)
 		self.table=[]
+		self.activeColor=Scene.defaultColor;
 	def MyClear(self):
 		self.table.clear()
 	def MyInit(self,rows,columns):
@@ -36,17 +50,47 @@ class Scene(QGraphicsScene):
 				cell=Cell(row,col)
 				self.addItem(cell)
 		
+		
+class List(QListWidget):
+	def __init__(self,scene):
+		QListWidget.__init__(self)
+		self.itemClicked.connect(self.clicked)
+		self.scene=scene
+		self.lastItem=None;
+		
+	def clicked(self,item):
+		self.updateLastItem(item)
+		
+	def updateLastItem(self,item):
+		if None==self.lastItem:
+			self.lastItem=item
+			self.scene.activeColor=item.background().color()
+		elif item==self.lastItem:
+			self.lastItem=None
+			self.scene.activeColor=Scene.defaultColor
+		else:
+			self.lastItem=item
+			self.scene.activeColor=item.background().color()
+			
+			
 class MainWindow(QWidget):
 	def __init__(self):
 		QWidget.__init__(self)
 		
+		self.setWindowTitle("Map Editor")
+		self.setWindowIcon(QIcon("tree.png"));
+
+			
 		mainLayout=QHBoxLayout(self)
 		rightLayout=QVBoxLayout()
 		
+		rightLayout.setAlignment(Qt.AlignTop)
+		
 		clearButton=QPushButton("Очистить")
 		downloadButton=QPushButton("Выгрузить")
-		rightLayout.addWidget(clearButton)
-		rightLayout.addWidget(downloadButton)
+		Alignment=Qt.AlignLeft | Qt.AlignTop
+		rightLayout.addWidget(clearButton,Alignment)
+		rightLayout.addWidget(downloadButton,Alignment)
 		
 		self.view=QGraphicsView()
 		mainLayout.addWidget(self.view)
@@ -64,11 +108,43 @@ class MainWindow(QWidget):
 		self.columnsEdit.setMinimum(3);
 		self.columnsEdit.setSuffix(" columns");
 		
-		rightLayout.addWidget(self.rowsEdit)
-		rightLayout.addWidget(self.columnsEdit)
+		rightLayout.addWidget(self.rowsEdit,Alignment)
+		rightLayout.addWidget(self.columnsEdit,Alignment)
+		
+		rightLayout.setSpacing(5)
+		rightLayout.setSizeConstraint(QLayout.SetMinimumSize)
 		
 		self.scene=Scene()
 		self.view.setScene(self.scene)
+		
+		self.list=List(self.scene)
+		rightLayout.addWidget(self.list)
+		
+		
+		colors=[
+			QColor(50, 205, 50),
+			QColor(255, 20, 147),
+			QColor(0, 128, 0),
+			QColor(128, 128, 0),
+			QColor(0, 128, 128),
+			QColor(0, 0, 139),
+			QColor(138, 43, 226),
+			QColor(147, 112, 219),
+			QColor(128, 0, 128),
+			QColor(75, 0, 130),
+			QColor(106, 90, 205),
+			QColor(218, 165, 32),
+			QColor(205, 133, 63),
+			QColor(139, 69, 19),
+			QColor(160, 82, 45),
+		]
+		for color in colors:
+			item=QListWidgetItem();
+			item.setBackground(color)
+			self.list.addItem(item)
+		
+		
+
 		
 		clearButton.clicked.connect(self.clear_trigger)    
 		
