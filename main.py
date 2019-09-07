@@ -23,7 +23,7 @@ class Cell(QGraphicsRectItem):
 		
 		self.setX(self.row*20)
 		self.setY(self.col*20)
-		self.setAcceptHoverEvents(True)
+		#self.setAcceptHoverEvents(True)
 		self.color=QColor(0,128,0);
 	def mousePressEvent(self,event):
 		if event.button() ==Qt.LeftButton:
@@ -42,6 +42,8 @@ class Scene(QGraphicsScene):
 		QGraphicsScene.__init__(self)
 		self.table=[]
 		self.activeColor=Scene.defaultColor;
+		self.isClickLeftButtonMouse=False;
+		self.lastItem=None
 	def MyClear(self):
 		self.table.clear()
 	def MyInit(self,rows,columns):
@@ -49,7 +51,41 @@ class Scene(QGraphicsScene):
 			for col in range(columns):
 				cell=Cell(row,col)
 				self.addItem(cell)
+				
+	def mousePressEvent(self, event):
+		self.isClickLeftButtonMouse=True;
 		
+		item=self.itemAt(event.scenePos().x(),event.scenePos().y(),QTransform())
+		if None==item:
+			return
+		item.setBrush(self.activeColor)
+		item.color=self.activeColor
+		
+		
+	def mouseReleaseEvent(self,event):
+		self.isClickLeftButtonMouse=False;
+		
+		item=self.itemAt(event.scenePos().x(),event.scenePos().y(),QTransform())
+		if None==item:
+			return
+		item.setBrush(self.activeColor)
+		item.color=self.activeColor
+		
+	def mouseMoveEvent(self,event):
+		item=self.itemAt(event.scenePos().x(),event.scenePos().y(),QTransform())
+		if None==item:
+			return
+		if self.isClickLeftButtonMouse:
+			item.setBrush(self.activeColor)
+			item.color=self.activeColor
+		else:
+			if self.lastItem==None:
+				self.lastItem=item
+				item.setBrush(self.activeColor)
+			elif self.lastItem!=item:
+				self.lastItem.setBrush(self.lastItem.color)
+				self.lastItem=item
+				item.setBrush(self.activeColor)
 		
 class List(QListWidget):
 	def __init__(self,scene):
@@ -88,11 +124,11 @@ class MainWindow(QWidget):
 		
 		clearButton=QPushButton("Очистить")
 		downloadButton=QPushButton("Выгрузить")
-		Alignment=Qt.AlignLeft | Qt.AlignTop
-		rightLayout.addWidget(clearButton,Alignment)
-		rightLayout.addWidget(downloadButton,Alignment)
+		
+
 		
 		self.view=QGraphicsView()
+		self.view.setMouseTracking(True)
 		mainLayout.addWidget(self.view)
 		mainLayout.addLayout(rightLayout)
 		
@@ -108,18 +144,29 @@ class MainWindow(QWidget):
 		self.columnsEdit.setMinimum(3);
 		self.columnsEdit.setSuffix(" columns");
 		
-		rightLayout.addWidget(self.rowsEdit,Alignment)
-		rightLayout.addWidget(self.columnsEdit,Alignment)
-		
-		rightLayout.setSpacing(5)
-		rightLayout.setSizeConstraint(QLayout.SetMinimumSize)
 		
 		self.scene=Scene()
 		self.view.setScene(self.scene)
 		
 		self.list=List(self.scene)
-		rightLayout.addWidget(self.list)
 		
+		
+		rightLayout.setSpacing(5)
+		rightLayout.setSizeConstraint(QLayout.SetMinimumSize)
+		
+		rightWidgets=[
+			clearButton,
+			downloadButton,
+			self.rowsEdit,
+			self.columnsEdit,
+		]
+		Alignment=Qt.AlignLeft | Qt.AlignTop
+		for rightWidget in rightWidgets:
+			rightWidget.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Fixed)
+			rightLayout.addWidget(rightWidget,Alignment)
+			
+		self.list.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Maximum)
+		rightLayout.addWidget(self.list,Alignment)
 		
 		colors=[
 			QColor(50, 205, 50),
