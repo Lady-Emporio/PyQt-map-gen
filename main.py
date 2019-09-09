@@ -138,6 +138,11 @@ class Scene(QGraphicsScene):
 		self.table=[]
 	def MyClear(self):
 		self.table.clear()
+		self.clear()
+		self.lastItem=None
+		self.isClickLeftButtonMouse=False;
+		self.activeColor=Scene.defaultColor;
+		
 	def MyInit(self,rows,columns):
 		
 		self.table=[[n for n in range(columns)] for i in range(rows)]
@@ -184,12 +189,12 @@ class Scene(QGraphicsScene):
 				item.setBrush(self.activeColor)
 		
 class List(QListWidget):
-	def __init__(self,scene):
+	def __init__(self,scene,MainWindow):
 		QListWidget.__init__(self)
 		self.itemClicked.connect(self.clicked)
 		self.scene=scene
 		self.lastItem=None;
-		
+		self.MainWindow=MainWindow;
 		self.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.customContextMenuRequested.connect(self.openMenu)
 		
@@ -204,6 +209,7 @@ class List(QListWidget):
 		action = menu.exec_(self.mapToGlobal(position))
 		if action == delAction:
 			self.takeItem(self.currentRow() )
+			self.MainWindow.saveColors()
 			
 	def clicked(self,item):
 		self.updateLastItem(item)
@@ -253,17 +259,19 @@ class MainWindow(QWidget):
 		self.rowsEdit.setValue(20);
 		self.rowsEdit.setMinimum(3);
 		self.rowsEdit.setSuffix(" rows");
+		self.rowsEdit.setMaximum( 10000)
 		
 		self.columnsEdit=QSpinBox();
 		self.columnsEdit.setSingleStep(5);
 		self.columnsEdit.setValue(20);
 		self.columnsEdit.setMinimum(3);
 		self.columnsEdit.setSuffix(" columns");
+		self.columnsEdit.setMaximum( 10000)
 		
 		self.scene=Scene()
 		self.view.setScene(self.scene)
 		
-		self.list=List(self.scene)
+		self.list=List(self.scene,self)
 		
 		rightLayout.setSpacing(5)
 		rightLayout.setSizeConstraint(QLayout.SetMinimumSize)
@@ -307,7 +315,7 @@ class MainWindow(QWidget):
 				g=str(cell.color.green()).zfill(3)
 				b=str(cell.color.blue()).zfill(3)
 				value=r+g+b;
-				if cell==len(table[row]):
+				if col==len(table[row])-1:
 					value+="\n"
 				else:
 					value+=" "
