@@ -5,12 +5,26 @@ from PyQt5.QtWidgets import (QMainWindow,QWidget,QHBoxLayout,QVBoxLayout,
 QListView,QLabel,QPushButton,QGraphicsView,
 QSpinBox)
 from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtWidgets import QApplication,QLayout
+from PyQt5.QtWidgets import QApplication,QLayout,QStyle
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QGraphicsScene,QGraphicsEllipseItem,QGraphicsLineItem,QListWidget ,QSizePolicy , QGraphicsRectItem,QListWidgetItem
 from PyQt5.QtCore import QTimer,Qt,QMimeData
 from PyQt5.QtGui import QColor,QBrush,QPen,QTransform ,QPixmap,QCursor,QIcon
 import json
+
+class Delegate(QtWidgets.QStyledItemDelegate):
+	def __init__(self):
+		QtWidgets.QStyledItemDelegate.__init__(self)
+	
+	def paint(self,painter, StyleOptionViewItem , ModelIndex ):
+	
+		if ( StyleOptionViewItem.state & QStyle.State_Selected ):
+			qbrush = ModelIndex.model().data(ModelIndex, Qt.BackgroundRole);
+			painter.fillRect(StyleOptionViewItem.rect, qbrush.color());
+			painter.drawText(StyleOptionViewItem.rect,1, "Active");
+		else:
+			QtWidgets.QStyledItemDelegate.paint(self,painter, StyleOptionViewItem, ModelIndex);
+
 class Colors():
 	fileName="conf.json"
 	fileError="log.txt"
@@ -171,6 +185,21 @@ class List(QListWidget):
 		self.scene=scene
 		self.lastItem=None;
 		
+		self.setContextMenuPolicy(Qt.CustomContextMenu)
+		self.customContextMenuRequested.connect(self.openMenu)
+		
+		self.setItemDelegate(Delegate())
+		
+	def openMenu(self,position):
+		item=self.itemAt(position)
+		if None==item:
+			return
+		menu = QtWidgets.QMenu()
+		delAction = menu.addAction("del")
+		action = menu.exec_(self.mapToGlobal(position))
+		if action == delAction:
+			self.takeItem(self.currentRow() )
+			
 	def clicked(self,item):
 		self.updateLastItem(item)
 		
