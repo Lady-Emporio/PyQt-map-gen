@@ -1,5 +1,3 @@
-
-		
 #SET PATH=%PATH%;C:\Users\Иванова\Desktop\НУЖНОЕ\1\We\source\p\fd\fd\myq
 #python main.py
 
@@ -8,6 +6,7 @@ QListView,QLabel,QPushButton,QGraphicsView,
 QSpinBox)
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QApplication,QLayout
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QGraphicsScene,QGraphicsEllipseItem,QGraphicsLineItem,QListWidget ,QSizePolicy , QGraphicsRectItem,QListWidgetItem
 from PyQt5.QtCore import QTimer,Qt,QMimeData
 from PyQt5.QtGui import QColor,QBrush,QPen,QTransform ,QPixmap,QCursor,QIcon
@@ -195,7 +194,6 @@ class List(QListWidget):
 		for item in ListWidgetItems:
 			QColorsList.append( item.background().color() )
 		
-		print(len(QColorsList))
 		return QColorsList
 		
 class MainWindow(QWidget):
@@ -255,25 +253,13 @@ class MainWindow(QWidget):
 			rightLayout.addWidget(rightWidget,Alignment)
 			
 		self.list.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Maximum)
-		rightLayout.addWidget(self.list,Alignment)
 		
-		# colors=[
-			# QColor(50, 205, 50),
-			# QColor(255, 20, 147),
-			# QColor(0, 128, 0),
-			# QColor(128, 128, 0),
-			# QColor(0, 128, 128),
-			# QColor(0, 0, 139),
-			# QColor(138, 43, 226),
-			# QColor(147, 112, 219),
-			# QColor(128, 0, 128),
-			# QColor(75, 0, 130),
-			# QColor(106, 90, 205),
-			# QColor(218, 165, 32),
-			# QColor(205, 133, 63),
-			# QColor(139, 69, 19),
-			# QColor(160, 82, 45),
-		# ]
+		tool=QtWidgets.QToolBar()
+		actionNewItem=tool.addAction("new")
+		actionNewItem.triggered.connect(self.newColor)
+		rightLayout.addWidget(tool)
+		rightLayout.addWidget(self.list,Alignment)
+
 		self.colors=Colors();
 		for colorObj in self.colors.colors:
 		
@@ -286,7 +272,15 @@ class MainWindow(QWidget):
 
 		self.saveColors()
 		clearButton.clicked.connect(self.clear_trigger)    
-		
+	def newColor(self):
+		dialog=QtWidgets.QColorDialog(self)
+		dialog.colorSelected.connect(self.createColor)
+		dialog.show()
+	def createColor(self,color):
+		item=QListWidgetItem();
+		item.setBackground(color)
+		self.list.addItem(item)
+		self.saveColors()
 	def saveColors(self):
 		colors=self.list.getColors()
 		self.colors.saveColors(colors)
