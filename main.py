@@ -135,13 +135,18 @@ class Scene(QGraphicsScene):
 		self.activeColor=Scene.defaultColor;
 		self.isClickLeftButtonMouse=False;
 		self.lastItem=None
+		self.table=[]
 	def MyClear(self):
 		self.table.clear()
 	def MyInit(self,rows,columns):
+		
+		self.table=[[n for n in range(columns)] for i in range(rows)]
 		for row in range(rows):
 			for col in range(columns):
 				cell=Cell(row,col)
 				self.addItem(cell)
+				
+				self.table[row][col]=cell
 				
 	def mousePressEvent(self, event):
 		self.isClickLeftButtonMouse=True;
@@ -221,8 +226,7 @@ class List(QListWidget):
 		for i in range(self.count()) :
 			ListWidgetItems.append( self.item(i))
 		for item in ListWidgetItems:
-			QColorsList.append( item.background().color() )
-		
+			QColorsList.append( item.background().color() )	
 		return QColorsList
 		
 class MainWindow(QWidget):
@@ -231,17 +235,13 @@ class MainWindow(QWidget):
 		
 		self.setWindowTitle("Map Editor")
 		self.setWindowIcon(QIcon("tree.png"));
-
-			
+	
 		mainLayout=QHBoxLayout(self)
 		rightLayout=QVBoxLayout()
-		
 		rightLayout.setAlignment(Qt.AlignTop)
 		
 		clearButton=QPushButton("Очистить")
 		downloadButton=QPushButton("Выгрузить")
-		
-
 		
 		self.view=QGraphicsView()
 		self.view.setMouseTracking(True)
@@ -260,12 +260,10 @@ class MainWindow(QWidget):
 		self.columnsEdit.setMinimum(3);
 		self.columnsEdit.setSuffix(" columns");
 		
-		
 		self.scene=Scene()
 		self.view.setScene(self.scene)
 		
 		self.list=List(self.scene)
-		
 		
 		rightLayout.setSpacing(5)
 		rightLayout.setSizeConstraint(QLayout.SetMinimumSize)
@@ -291,16 +289,32 @@ class MainWindow(QWidget):
 
 		self.colors=Colors();
 		for colorObj in self.colors.colors:
-		
 			color=QColor( colorObj["r"],colorObj["g"],colorObj["b"])
 			item=QListWidgetItem();
 			item.setBackground(color)
 			self.list.addItem(item)
-		
-		
-
 		self.saveColors()
-		clearButton.clicked.connect(self.clear_trigger)    
+		clearButton.clicked.connect(self.clear_trigger)   
+		downloadButton.clicked.connect(self.mapToJson)
+	def mapToJson(self):
+		
+		table=self.scene.table
+		result=""
+		for row in range(len(table)):
+			for col in range( len(table[row]) ):
+				cell=table[row][col]
+				r=str(cell.color.red()).zfill(3)
+				g=str(cell.color.green()).zfill(3)
+				b=str(cell.color.blue()).zfill(3)
+				value=r+g+b;
+				if cell==len(table[row]):
+					value+="\n"
+				else:
+					value+=" "
+				result+=value
+		with open("map.txt","w") as f:
+			f.write(result)
+				
 	def newColor(self):
 		dialog=QtWidgets.QColorDialog(self)
 		dialog.colorSelected.connect(self.createColor)
